@@ -1,0 +1,18 @@
+# Ignorar un archivo específico
+#secreto.txt
+guiagithub.txt
+03-Memoria2.pdf
+
+# Ignorar una carpeta completa
+#node_modules/
+#dist/
+
+# Ignorar por extensión
+#*.log
+#*.env
+
+# Ignorar todo dentro de una carpeta pero no la carpeta en sí
+#logs/*
+
+# Excepción: ignorar todo excepto un archivo específico
+#!logs/importante.log
