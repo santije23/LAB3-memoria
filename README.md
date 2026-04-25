@@ -17,6 +17,8 @@
 
     De manera similar, la región **Stack** se logra encontrar a partir de comparar Dir. local_var : 0x7ffe12f7225c con el resultado de ejecutar ``cat /proc/$(pgrep mem_map)/maps``, en cuyo resultado encontramos el rango de direcciones 7ffe12f52000-7ffe12f74000, en cuyo rango cabe perfectamente el resultado de Dir. local_var, otro dato a tener en cuenta es que el rango de direcciones se nos está dando en la parte superior de la memoria; en cuanto a los permisos que tiene, son de lectura, escritura y private (rw-p). En cuanto a la comparación del Heap y Stack tienen el mismo tipo de permisos, y debe ser de esta manera para poder leer y escribir variables, punteros o retornos de función en tiempo de ejecución; así mismo, la única diferencia con la región text es el permiso de private (x).
 
+    ![wish](capturas/mem_map1.PNG)
+    
 
 2. Compare las direcciones impresas con los rangos de /proc/maps. ¿A qué región pertenece
 cada variable?
@@ -51,6 +53,9 @@ cada variable?
     - 7ffe12f52000-7ffe12f74000  -> Dir. local_var : 0x7ffe12f7225c (Region stack)
     - 7ffe12fef000-7ffe12ff3000 
     - 7ffe12ff3000-7ffe12ff5000
+
+    ![wish](capturas/mem_map2.PNG)
+
 3. ¿Qué otras regiones aparecen en el mapa (libc, [vdso], [vsyscall])? ¿Que función
 cumple cada una?
 
@@ -67,6 +72,30 @@ cumple cada una?
 4. ¿Son las direcciones virtuales iguales a las fisicas? Explique apoyandose en el concepto de address space del OSTEP.
 
     Según el libro de (Operating Systems: Three Easy Pieces) el (address space) o espacio de direccionamiento se refiere a la abstracción que realiza el sistema operativo en cuanto al espacio de memoria que ocupa un proceso. En este caso, la abstracción consiste en hacerle creer que tiene toda la memoria RAM a su disposición, que empieza en 0 y llega hasta un máximo (por ejemplo, $2^{n}-1$). En cuanto a una dirección virtual, se refiere a la dirección de memoria que se le asigna al proceso, sin embargo, internamente, esta dirección no corresponde a la dirección física, la cual es la verdadera dentro de toda la ejecución del programa. Es por esta abstracción que se puede decir que una dirección virtual no es lo mismo que una dirección física, ya que su valor cambia constantemente.
+
+### 1.4 Actividad: Comparar espacios de dos procesos simultáneos
+1. ¿Son las mismas direcciones virtuales en ambos procesos? ¿Qué conclusión saca sobre el
+aislamiento del espacio de direcciones?
+    En el resultado de la ejecución, las direcciones de memoria son diferentes para cada una de las ejecuciones, por lo cual el S.O. se está encargando de aislar para cada proceso su espacio de memoria, procurando que en cada ejecución no sea igual para evitar que otros procesos choquen con direcciones ya ocupadas o para mejorar la seguridad en cuanto a que no sepa un proceso dónde está ubicado el código de otro. Independientemente de la asignación virtual, el proceso siempre cree que se le está asignando todo el espacio a él, desde la primera dirección hasta la última.
+
+    ![wish](capturas/mem_map3.PNG)
+    ![wish](capturas/mem_map4.PNG)
+
+2. ¿Podría el Proceso A leer o modificar la variable global del Proceso B mediante su dirección virtual? Justifique.
+    Cada proceso tiene su propia tabla de páginas. Cuando el proceso A intenta acceder a 0x56a2a380a010, la MMU busca en la tabla del proceso A, la cual apunta a una celda de memoria física específica. La tabla del Proceso B apuntará a una celda física completamente distinta, incluso si la dirección virtual es la misma, por lo cual, aunque un proceso conozca de antemano la dirección virtual de la variable global, cuando intenta acceder y modificarla, simplemente no encontrará nada, ya que o estará fuera de su rango de control y se genera algún tipo de excepción o simplemente no encuentra ningún dato, ya que la dirección física será totalmente distinta.
+
+### 2.2 Actividad: Uso correcto de malloc y free
+
+1. Muestre la salida completa de Valgrind. ¿Reporta errores o fugas de memoria? ¿Que significa el mensaje "All heap blocks were freed"?
+
+    ![wish](capturas/heap_demo1.PNG)
+    Según el resultado de la línea ``==9093== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)`` no se encuentran errores por accesos inválidos, y verificando la línea ``==9093==     in use at exit: 0 bytes in 0 blocks`` no se detectó memoria perdida u olvidada. 
+
+    En cuanto al mensaje ``All heap blocks were freed`` significa que para cada llamada a funciones que reservan memoria en el heap como malloc, calloc o realloc, hubo una llamada correspondiente a free antes de que el proceso terminara.
+
+2. ¿Por qué se usa sizeof(int) en lugar del valor literal 4? ¿Qué ventaja ofrece en portabilidad entre arquitecturas?
+    Se usa sizeof(int) en lugar de un valor literal para garantizar la portabilidad y la seguridad del código. Históricamente, el tamaño de un entero depende de la arquitectura: algunos sistemas asignan 2 bytes, otros 4, e incluso algunos pueden asignar más. Al delegar este cálculo al operador sizeof en tiempo de compilación, aseguramos que la asignación de memoria sea la exacta para la arquitectura donde se ejecute el programa. Esto evita tanto el desperdicio de memoria como un posible desbordamiento de memoria (buffer overflow). Además, mejora la mantenibilidad: si en el futuro se cambia el tipo de dato (por ejemplo, a double), solo se debe modificar la declaración y no buscar manualmente cada valor literal en el código.
+
 
 
 ## (c) Problemas presentados durante el desarrollo de la práctica y sus soluciones.
