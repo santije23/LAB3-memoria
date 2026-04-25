@@ -29,28 +29,28 @@ cada variable?
     Dir. heap_var : 0x55a31c5f62a0
 
     Al comparar cada direccion se puede obtener los siguientes rangos y al frente se coloca la direccion que pertenece a cada rango.
-    55a3176d9000-55a3176da000 
-    55a3176da000-55a3176db000  -> Dir. codigo (main) : 0x55a3176da209 (Region text)
-    55a3176db000-55a3176dc000
-    55a3176dc000-55a3176dd000
-    55a3176dd000-55a3176de000  -> Dir. global_var : 0x55a3176dd010 (Region Data)
-    55a31c5f6000-55a31c617000  -> Dir. heap_var : 0x55a31c5f62a0 (Region heap)
-    7673a9c00000-7673a9c28000 
-    7673a9c28000-7673a9db0000 
-    7673a9db0000-7673a9dff000 
-    7673a9dff000-7673a9e03000 
-    7673a9e03000-7673a9e05000 
-    7673a9e05000-7673a9e12000 
-    7673a9eed000-7673a9ef0000  
-    7673a9ef5000-7673a9ef7000 
-    7673a9ef7000-7673a9ef8000 
-    7673a9ef8000-7673a9f23000 
-    7673a9f23000-7673a9f2d000   
-    7673a9f2d000-7673a9f2f000 
-    7673a9f2f000-7673a9f31000 
-    7ffe12f52000-7ffe12f74000  -> Dir. local_var : 0x7ffe12f7225c (Region stack)
-    7ffe12fef000-7ffe12ff3000 
-    7ffe12ff3000-7ffe12ff5000
+    - 55a3176d9000-55a3176da000 
+    - 55a3176da000-55a3176db000  -> Dir. codigo (main) : 0x55a3176da209 (Region text)
+    - 55a3176db000-55a3176dc000
+    - 55a3176dc000-55a3176dd000
+    - 55a3176dd000-55a3176de000  -> Dir. global_var : 0x55a3176dd010 (Region Data)
+    - 55a31c5f6000-55a31c617000  -> Dir. heap_var : 0x55a31c5f62a0 (Region heap)
+    - 7673a9c00000-7673a9c28000 
+    - 7673a9c28000-7673a9db0000 
+    - 7673a9db0000-7673a9dff000 
+    - 7673a9dff000-7673a9e03000 
+    - 7673a9e03000-7673a9e05000 
+    - 7673a9e05000-7673a9e12000 
+    - 7673a9eed000-7673a9ef0000  
+    - 7673a9ef5000-7673a9ef7000 
+    - 7673a9ef7000-7673a9ef8000 
+    - 7673a9ef8000-7673a9f23000 
+    - 7673a9f23000-7673a9f2d000   
+    - 7673a9f2d000-7673a9f2f000 
+    - 7673a9f2f000-7673a9f31000 
+    - 7ffe12f52000-7ffe12f74000  -> Dir. local_var : 0x7ffe12f7225c (Region stack)
+    - 7ffe12fef000-7ffe12ff3000 
+    - 7ffe12ff3000-7ffe12ff5000
 3. ¿Qué otras regiones aparecen en el mapa (libc, [vdso], [vsyscall])? ¿Que función
 cumple cada una?
 
