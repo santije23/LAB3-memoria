@@ -94,9 +94,23 @@ aislamiento del espacio de direcciones?
     En cuanto al mensaje ``All heap blocks were freed`` significa que para cada llamada a funciones que reservan memoria en el heap como malloc, calloc o realloc, hubo una llamada correspondiente a free antes de que el proceso terminara.
 
 2. ¿Por qué se usa sizeof(int) en lugar del valor literal 4? ¿Qué ventaja ofrece en portabilidad entre arquitecturas?
-    Se usa sizeof(int) en lugar de un valor literal para garantizar la portabilidad y la seguridad del código. Históricamente, el tamaño de un entero depende de la arquitectura: algunos sistemas asignan 2 bytes, otros 4, e incluso algunos pueden asignar más. Al delegar este cálculo al operador sizeof en tiempo de compilación, aseguramos que la asignación de memoria sea la exacta para la arquitectura donde se ejecute el programa. Esto evita tanto el desperdicio de memoria como un posible desbordamiento de memoria (buffer overflow). Además, mejora la mantenibilidad: si en el futuro se cambia el tipo de dato (por ejemplo, a double), solo se debe modificar la declaración y no buscar manualmente cada valor literal en el código.
 
+    Se usa sizeof(int) en lugar de un valor literal para garantizar la portabilidad y la seguridad del código. Históricamente, el tamaño de un entero depende de la arquitectura: algunos sistemas asignan 2 bytes, otros 4, e incluso algunos pueden asignar más. Al delegar este cálculo al operador sizeof en tiempo de compilación, aseguramos que la asignación de memoria sea la exacta para la arquitectura donde se ejecute el programa. Esto evita tanto el desperdicio de memoria como un posible desbordamiento de memoria (buffer overflow). Además, mejora la mantenibilidad: si en el futuro se cambia el tipo de dato por ejemplo, a double, solo se debe modificar la declaración y no buscar manualmente cada valor literal en el código.
 
+3. ¿Qué devuelve malloc cuando no hay memoria disponible? ¿Por qué es critico verificar ese
+valor antes de usarlo?
+
+    En el caso de que se acabe la memoria disponible malloc debe devolver null segun la fuente de IBM ``https://www.ibm.com/docs/es/i/7.6.0?topic=functions-malloc-reserve-storage-block`` en el caso de que no se verifique este valor antes de usarlo, un proceso intentaría acceder a un espacio de memoria que no existe, dependiendo del sistema donde se ejecute, lo más común es que el proceso se finalice de manera abrupta, lo cual no es la mejor presentación para alguien que utilice nuestro programa.
+
+### 2.4 Actividad: Identificar y corregir errores de memoria
+1. Transcriba los mensajes que arroja Valgrind. ¿Cual mensaje corresponde a cada uno de los
+tres errores clasicos?
+
+    - El primer error está relacionado con buffer overflow en el cual, cuando se llega a la posición i=5, el código ejecuta p[5] = 5. En este caso, se está intentando asignar un valor para una posición que no fue asignada previamente, lo que genera el mensaje de valgring ``==10758== Invalid write of size 4 ==10758== at 0x1091E3: main (buggy_mem.c:10)``
+
+    - El segundo error es relacionado a memory leak en el cual se realizó una reserva de memoria con malloc() cuando se ejecuta el código ``char *q = malloc(100);``, sin embargo, después, durante el resto de la ejecución, ese espacio no fue liberado con la función free(q) por lo cual valgrind detecta esto mediante el mensaje ``==10758== 100 bytes in 1 blocks are definitely lost in loss record 1 of 1``
+
+    - El tercer error relacionado con use-after-free, ocurre cuando liberamos memoria cuando después necesitábamos utilizar todavía ese espacio reservado. Esto ocurre en el código cuando primero se libera el espacio reservado en p ``free(p);`` e inmediatamente intentamos acceder a ese espacio que ya no está disponible con ``printf("p[0] = %d\n", p[0]);``. Esto lo hace saber valgrind mediante el mensaje ``==10758== Invalid read of size 4 ==10758== at 0x109231: main (buggy_mem.c:20)``
 
 ## (c) Problemas presentados durante el desarrollo de la práctica y sus soluciones.
 
