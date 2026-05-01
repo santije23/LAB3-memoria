@@ -1,7 +1,7 @@
 # Ignorar un archivo específico
 #secreto.txt
 guiagithub.txt
-03-Memoria2.pdf
+
 
 # Ignorar una carpeta completa
 #node_modules/
