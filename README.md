@@ -110,7 +110,44 @@ tres errores clasicos?
 
     - El segundo error es relacionado a memory leak en el cual se realizó una reserva de memoria con malloc() cuando se ejecuta el código ``char *q = malloc(100);``, sin embargo, después, durante el resto de la ejecución, ese espacio no fue liberado con la función free(q) por lo cual valgrind detecta esto mediante el mensaje ``==10758== 100 bytes in 1 blocks are definitely lost in loss record 1 of 1``
 
-    - El tercer error relacionado con use-after-free, ocurre cuando liberamos memoria cuando después necesitábamos utilizar todavía ese espacio reservado. Esto ocurre en el código cuando primero se libera el espacio reservado en p ``free(p);`` e inmediatamente intentamos acceder a ese espacio que ya no está disponible con ``printf("p[0] = %d\n", p[0]);``. Esto lo hace saber valgrind mediante el mensaje ``==10758== Invalid read of size 4 ==10758== at 0x109231: main (buggy_mem.c:20)``
+    - El tercer error relacionado con use-after-free, ocurre cuando liberamos memoria y después necesitábamos utilizar todavía ese espacio reservado. Esto ocurre en el código cuando primero se libera el espacio reservado en p ``free(p);`` e inmediatamente intentamos acceder a ese espacio que ya no está disponible con ``printf("p[0] = %d\n", p[0]);``. Esto lo hace saber valgrind mediante el mensaje ``==10758== Invalid read of size 4 ==10758== at 0x109231: main (buggy_mem.c:20)``
+
+2. Corrija el programa (buggy mem fixed.c) y verifique con Valgrind que no queda ningún
+error ni fuga.
+
+    Para corregir el primer error, basta con iterar hasta la posición correcta que se definió en el número de enteros reservados. En este caso, al ser 5 enteros, y debido a que se empieza a iterar desde la posición 0, solamente debemos iterar hasta que i sea menor a 5, con esto se soluciona el error.
+
+    Para el segundo error, lo que se debe realizar es liberar el espacio reservado en el apuntador *q, para ello se verifica que la última invocación de este espacio viene por la utilización de ``printf("%s\n", q);`` por lo cual, después de esto, se debe agregar ``free(q)`` para que ese espacio pueda ser liberado correctamente.
+
+    El último error se soluciona de forma similar al segundo, en este caso si se utiliza la función ``free()`` pero en un lugar incorrecto. Para utilizarla adecuadamente, se debe mover esta función después de la última invocación del apuntador p, lo cual sucede después de realizar la impresión mediante `` printf("p[0] = %d\n", p[0]);``.
+
+    Al realizar estas correcciones, compilar y ejecutar tanto el programa como valgrind se puede observar que no hay errores ni fugas.
+    ![buggy_mem_fixed](capturas/buggy_mem_fixed1.PNG)
+
+3. ¿Qué consecuencias puede tener un use-after-free en un programa real en términos de seguridad y estabilidad del sistema?
+
+    En términos de seguridad, puede llegar a comprometer datos que estén siendo almacenados en esa posición. Si, por ejemplo, un atacante intenta aprovechar que se realiza un llamado legítimo a esa posición aunque ya no haya información, el atacante podría redirigir el llamado a otros sectores con datos sensibles. En cuanto a la estabilidad, simplemente el programa en ejecución no es confiable, ya que puede pasar que se detenga inesperadamente o que traiga información inconsistente.
+
+### Actividad: Base & Bounds — Análisis
+1. Compile y ejecute. Muestre la salida completa. ¿Que ocurre al acceder a VA=64 y VA=100
+en el Proceso A? ¿Que haria el SO real ante esta excepcion?
+
+    ![base_bounds](capturas/base_bounds1.PNG)
+    al acceder a ``VA=64`` no es válida porque ``64 >= 64`` el programa detecta la violación y muestra ``[EXCEPCION] VA=64 viola bounds=64``, de manera similar al acceder a ``VA=100`` no es válida porque ``100 >= 64`` el programa detecta la violación y muestra ``[EXCEPCION] VA=100 viola bounds=64``
+
+    En un sistema operativo moderno, este chequeo no lo hace una función de C, sino la MMU del procesador. Cuando el hardware detecta que un proceso intenta acceder a una dirección fuera de su bounds, en este caso se genera una interrupción de hardware lo que hace que pase de modo usuario a modo kernel, regresándole el control al sistema operativo para que este último gestione esta interrupción.
+
+2. Agregue un Proceso C (base=0, bounds=32) al programa y traduzca las mismas VAs.
+¿Puede el Proceso A acceder a las direcciones del Proceso C directamente? Justifique.
+
+    Como se puede ver en la siguiente imagen la mayoría de las direcciones virtuales (63, 64, 100) lanzan una excepción porque superan el límite de 32. Solo las direcciones virtuales pequeñas son válidas para él proceso C
+    ![base_bounds](capturas/base_bounds2.PNG)
+
+    El proceso A tampoco podría acceder a las direcciones del proceso C, debido a que el proceso A empieza donde finaliza prácticamente el proceso C, el SO detectaría el acceso inválido y generaría una excepción.
+
+3. ¿Cual es la limitacion principal del esquema base & bounds que motiva el surgimiento de la segmentacion?
+
+    La limitación principal es la ineficiencia en el uso de la memoria física, ya que el esquema de base y bound obliga a asignar un bloque contiguo que incluya no solo el código y los datos, sino también todo el espacio vacío entre el stack y el heap. Esto genera un gran desperdicio de memoria física al reservar espacio que el proceso no está utilizando realmente, además de impedir que diferentes partes del programa sean compartidas entre procesos o tengan permisos de seguridad distintos.
 
 ## (c) Problemas presentados durante el desarrollo de la práctica y sus soluciones.
 
