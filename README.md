@@ -128,7 +128,7 @@ error ni fuga.
 
     En términos de seguridad, puede llegar a comprometer datos que estén siendo almacenados en esa posición. Si, por ejemplo, un atacante intenta aprovechar que se realiza un llamado legítimo a esa posición aunque ya no haya información, el atacante podría redirigir el llamado a otros sectores con datos sensibles. En cuanto a la estabilidad, simplemente el programa en ejecución no es confiable, ya que puede pasar que se detenga inesperadamente o que traiga información inconsistente.
 
-### Actividad: Base & Bounds — Análisis
+### 3.2 Actividad: Base & Bounds — Análisis
 1. Compile y ejecute. Muestre la salida completa. ¿Que ocurre al acceder a VA=64 y VA=100
 en el Proceso A? ¿Que haria el SO real ante esta excepcion?
 
@@ -149,8 +149,52 @@ en el Proceso A? ¿Que haria el SO real ante esta excepcion?
 
     La limitación principal es la ineficiencia en el uso de la memoria física, ya que el esquema de base y bound obliga a asignar un bloque contiguo que incluya no solo el código y los datos, sino también todo el espacio vacío entre el stack y el heap. Esto genera un gran desperdicio de memoria física al reservar espacio que el proceso no está utilizando realmente, además de impedir que diferentes partes del programa sean compartidas entre procesos o tengan permisos de seguridad distintos.
 
-## (c) Problemas presentados durante el desarrollo de la práctica y sus soluciones.
+### 7.1 Actividad: Localidad y TLB — Análisis
 
+1. ¿Cuántas veces mas lento es el acceso aleatorio frente al secuencial? Muestre el promedio de 3 ejecuciones de tlb locality.
+
+    ![tlb_locatity](capturas/tlb_locatity1.PNG)
+    Para realizar el promedio del acceso secuencial, partimos de los datos obtenidos en tres ejecuciones, los cuales fueron 10.88ms, 9.94ms y 10.23. Al realizar el promedio obtengo 10.35
+
+    Para el acceso aleatorio, de forma similar se obtienen los siguientes tiempos: 38.     02ms, 38.88ms y 49.97ms. Al realizar el promedio se obtiene 42.29ms
+
+    Y al sacar la relación del acceso aleatorio sobre el secuencial, se obtiene 42.29ms/10.35, se obtiene 4.08, con lo que se puede concluir que el acceso aleatorio es 4.08 veces más lento que el secuencial.
+
+2. Explique con el modelo del TLB por qué el acceso aleatorio es mas lento. ¿Qué ocurre con
+el hit rate en cada caso?    
+
+    Cuando se hace el acceso secuencial, se recorre el arreglo posición por posición. Eso significa que muchas direcciones virtuales consecutivas caen dentro de la misma página de memoria o en páginas cercanas. Como el TLB guarda las traducciones recientes, una vez se carga una entrada, se reutiliza varias veces antes de cambiar de página.
+    En este caso ocurre un alto hit rate en el TLB: la mayoría de accesos encuentran la traducción ya en caché, evitando tener que ir a la tabla de páginas, que es mucho más lenta.
+
+    En cambio, en el acceso aleatorio, cada acceso salta a una posición distinta del arreglo, muy probablemente en páginas diferentes. Esto hace que las entradas del TLB se reemplacen constantemente porque no hay reutilización de las traducciones recientes.
+    Aquí ocurre un bajo hit rate: muchos accesos producen TLB misses, obligando al sistema a consultar la tabla de páginas en memoria, lo que introduce más latencia.
+
+3. Si el tamaño de pagina fuera 64 KB en lugar de 4 KB, ¿mejoraría o empeoraría la situación con accesos aleatorios? Justifique desde el punto de vista del TLB y del uso de memoria.
+
+    Desde la perspectiva del Translation Lookaside Buffer, al tener páginas más grandes, cada entrada del TLB cubre una región mayor de memoria. Esto implica que, aunque los accesos sean aleatorios, hay mayor probabilidad de que varias direcciones distintas caigan dentro de la misma página. Como consecuencia, el hit rate del TLB aumentaría y habría menos fallos de traducción (TLB misses), reduciendo el tiempo perdido en consultar la tabla de páginas.
+
+    Sin embargo, desde el punto de vista del uso de memoria, aparece un efecto negativo: la fragmentación interna. Al usar páginas de 64 KB, es más probable que parte de cada página no se utilice completamente, desperdiciando memoria. Además, si los accesos aleatorios están muy dispersos, podrías terminar cargando grandes bloques de memoria de los cuales solo usas una pequeña parte
+
+### 7.2 Actividad: Comportamiento de los TLB
+
+1. Un TLB con 64 entradas (fully associative) y paginas de 4 KB. ¿Cuanta memoria puede
+cubrir sin generar misses? ¿Es suficiente para un proceso moderno típico?
+
+    Para calcular cuánta memoria puede cubrir el TLB, se multiplica el número de entradas por el tamaño de página, en este caso ``64×4KB = 256KB``. Es decir, el TLB puede cubrir hasta 256 KB de memoria sin generar fallos (misses), siempre que los accesos se mantengan dentro de ese conjunto de páginas.
+
+    En cuanto a si esto es suficiente para un proceso moderno: en la práctica no lo es. Los programas actuales suelen manejar megabytes o incluso gigabytes de memoria, por lo que 256 KB es una fracción muy pequeña. Esto implica que, el TLB se llenaria rápidamente y comenzarán a ocurrir misses.
+
+2. Consulte: ¿Qué es un TLB shootdown y en que situación ocurre en sistemas multiprocesador? ¿Por qué es una operación costosa?
+
+    Un Translation Lookaside Buffer shootdown es un mecanismo utilizado en sistemas multiprocesador para mantener la coherencia de las traducciones de direcciones cuando cambia el mapeo de memoria virtual a física. Ocurre cuando el sistema operativo modifica la tabla de páginas de un proceso (por ejemplo, al liberar memoria, cambiar permisos o hacer swapping) y necesita asegurarse de que todos los núcleos o CPUs eliminen de sus TLB las entradas antiguas que ya no son válidas. Para lograrlo, el sistema envía interrupciones entre procesadores (IPIs) a los demás núcleos, obligándolos a invalidar esas entradas. Esta operación es costosa porque implica coordinación entre múltiples CPUs, interrupciones que detienen temporalmente la ejecución normal, sincronización para garantizar consistencia y, además, la pérdida de entradas válidas en el TLB, lo que provoca más fallos posteriores y accesos adicionales a la tabla de páginas en memoria, aumentando la latencia general del sistema.
+
+3. Explique la diferencia entre TLB gestionado por hardware (CISC/x86) y por software
+(RISC/MIPS). ¿Cuál ofrece mayor flexibilidad al diseñador del SO y por qué?
+
+    En arquitecturas como x86, el Translation Lookaside Buffer es gestionado por hardware: ante un miss, la CPU resuelve automáticamente la traducción consultando la tabla de páginas, lo que es rápido pero poco flexible. En cambio, en arquitecturas como MIPS, el TLB es gestionado por software: el miss genera una excepción y el sistema operativo decide cómo resolverlo, lo que es más lento pero ofrece mayor flexibilidad, ya que el SO puede definir sus propias políticas y estructuras de memoria.
+
+## (c) Problemas presentados durante el desarrollo de la práctica y sus soluciones.
+Uno de los principales problemas fue comprender el funcionamiento y la utilidad de Valgrind. La instalación resultó relativamente sencilla; sin embargo, la dificultad estuvo en interpretar los resultados que arroja al ejecutarlo. A medida que se fueron resolviendo las preguntas y realizando pruebas, su utilidad se volvió más clara, especialmente en la detección de errores relacionados con el uso de memoria. Esto es importante porque, en muchas ocasiones, se programa sin tener plena conciencia de cómo se está utilizando la memoria, y Valgrind se convierte en una herramienta muy valiosa para este tipo de depuración.
 
 ## (d) Pruebas realizadas a los programas que verificaron su funcionalidad.
 
@@ -160,6 +204,23 @@ En la siguiente imagen se observa la ejecución del programa base y su resultado
 Luego el resultado de realizar abrir una segunda terminal y leer el mapa de memoria del proceso mediante el comando cat /proc/$(pgrep mem_map)/maps
 ![wish](capturas/mem_map1.PNG)
 
+Aqui el resultado de tratar de compilar buggy_mem, desde el inicio de se nota que hay problemas de compilacion
+![buggy](capturas/buggy_mem1.PNG)
+
+Aqui el resumen del resultado de ejecutar valgrind
+![buggy](capturas/buggy_mem2.PNG)
+
+Y este es el resumen del resultado de ejecutar valgrind pero con un codigo corregido
+![buggy](capturas/buggy_mem_fixed1.PNG)
+
+Este seria el resultado de ejecutar base_bound con el codigo suministrado
+![base_bound](capturas/base_bounds1.PNG)
+
+Este seria el resultado de ejecutar base_bound con un nuevo proceso en el codigo suministrado
+![base_bound](capturas/base_bounds2.PNG)
+
+Este seria el resultado de ejecutar tlb_locality con el acceso secuencial y aleatorio en tres intentos.
+![tlb](capturas/tlb_locatity1.PNG)
 
 ## (e) Un enlace a un video de 10 minutos donde se sustente el desarrollo.
 
@@ -167,3 +228,4 @@ Luego el resultado de realizar abrir una segunda terminal y leer el mapa de memo
 
 
 ## (f) Manifiesto de transparencia: En que puntos se apoyaron de la IA generativa.
+Principalmente, se utilizó para entender conceptos dentro de cada forma de acceso a la memoria, con el fin de poder realizar modificaciones en el código cuando alguna pregunta lo requería.
