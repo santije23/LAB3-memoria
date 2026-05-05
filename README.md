@@ -149,6 +149,153 @@ en el Proceso A? ¿Que haria el SO real ante esta excepcion?
 
     La limitación principal es la ineficiencia en el uso de la memoria física, ya que el esquema de base y bound obliga a asignar un bloque contiguo que incluya no solo el código y los datos, sino también todo el espacio vacío entre el stack y el heap. Esto genera un gran desperdicio de memoria física al reservar espacio que el proceso no está utilizando realmente, además de impedir que diferentes partes del programa sean compartidas entre procesos o tengan permisos de seguridad distintos.
 
+
+### 4 Segmentación
+### 4.1 Traducción manual con tabla de segmentos
+| Segmento | Base   | Tamaño | Crece |
+| -------- | ------ | ------ | ----- |
+| Code     | 0x4000 | 2 KB   | +     |
+| Heap     | 0x6000 | 3 KB   | +     |
+| Stack    | 0x2800 | 2 KB   | -     |
+
+Se realiza la traducción de las direcciones virtuales:
+- VA = 0x03A0
+
+Selector: 00 → Segmento Code
+Offset: 0x3A0 = 928 (válido)
+
+Cálculo: PA = 0x4000 + 0x3A0 = 0x43A0
+
+- VA = 0x1800
+
+Selector: 01 → Segmento Heap
+Offset: 0x800 = 2048 (válido)
+
+Cálculo: PA = 0x6000 + 0x800 = 0x6800
+
+- VA = 0x3C00
+
+Selector: 11 → Segmento Stack
+Offset: 0xC00 = 3072 (> 2048)
+
+Resultado: ❌ Excepción (violación de segmento)
+- VA = 0x0C00
+
+Selector: 00 → Segmento Code
+Offset: 0xC00 = 3072 (> 2048)
+
+Resultado: ❌ Excepción
+- VA = 0x2200
+
+Selector: 10 → Segmento inválido
+
+Resultado: ❌ Excepción
+
+### 4.2 Análisis
+
+El segmento Stack crece en dirección negativa porque en la memoria el stack se expande hacia direcciones menores. Por esta razón, el cálculo de la dirección física se realiza restando el offset a la base.
+
+La segmentación permite dividir la memoria en partes lógicas (código, heap, stack), lo que mejora la organización y uso de memoria frente al esquema base & bounds.
+
+La fragmentación externa ocurre cuando existen espacios libres dispersos en memoria que no pueden ser utilizados eficientemente para nuevas asignaciones.
+
+### 5 Paginación
+### 5.1 Cálculo de la tabla de páginas
+
+Dado el sistema :
+
+Espacio virtual: 32 bits
+Tamaño de página: 4 KB = 2¹²
+Espacio físico: 20 bits
+Tamaño PTE: 4 bytes
+
+- 1. Bits
+Offset = 12 bits
+VPN = 32 - 12 = 20 bits
+
+- 2. Número de páginas
+     2^20 = 1,048,576 páginas
+     
+- 3. Tamaño tabla
+     1,048,576 × 4 bytes = 4 MB
+
+- 4. PFN y bits de control
+PFN = 20 - 12 = 8 bits
+
+Bits de control:
+
+Valid bit → indica si la página está en memoria
+Dirty bit → indica si fue modificada
+Access bit → indica si fue usada recientemente
+Permisos (R/W)
+
+### 5.2 Simulador de paginación
+Se ejecutó el programa paging_sim.c obteniendo:
+
+- VA = 0x10
+VPN = 1 → no presente
+Resultado: PAGE FAULT
+
+-VA = 0xA3
+VPN = 10 → PFN = 4
+Cálculo:PA = (4 << 4) | 3 = 0x43
+Resultado: Dirección física = 0x43
+
+### 5.3 Análisis
+
+Cuando ocurre un page fault, el sistema operativo carga la página desde disco a memoria RAM y actualiza la tabla de páginas.
+
+Una instrucción requiere dos accesos a memoria:
+Tabla de páginas
+Dato
+Esto es costoso, por lo que se utiliza el TLB para acelerar el proceso.
+La paginación elimina la fragmentación externa, aunque puede generar fragmentación interna.
+
+### 6 Gestión de espacio libre
+### 6.1 Simulación de asignación
+
+Estado inicial :
+| Dirección | Tamaño |
+| --------- | ------ |
+| 0x0100    | 100    |
+| 0x0200    | 500    |
+| 0x0400    | 200    |
+| 0x0500    | 300    |
+| 0x0700    | 600    |
+
+- First Fit
+malloc(212) → 0x0200 (queda 288)
+malloc(417) → 0x0700 (queda 183)
+malloc(98) → 0x0100 (queda 2)
+malloc(426) → ❌ falla
+
+- Best Fit
+malloc(212) → 0x0500 (queda 88)
+malloc(417) → 0x0200 (queda 83)
+malloc(98) → 0x0100 (queda 2)
+malloc(426) → 0x0700 (queda 174)
+Sí cambia el resultado.
+
+-Fragmentación
+First Fit → más fragmentación
+Best Fit → menos fragmentación
+
+-Coalescing
+Consiste en unir bloques libres contiguos para formar uno más grande y evitar fallos de asignación.
+
+-Fragmentación interna
+Es el espacio desperdiciado dentro de un bloque asignado, común en slab allocator.
+
+### 6.2 Fragmentación en glibc
+
+Las direcciones asignadas no siempre son consecutivas debido a la gestión interna del heap.
+La asignación de 1500 bytes puede fallar aunque exista memoria suficiente, debido a fragmentación externa.
+
+-Diferencia de allocators
+Usuario (malloc/glibc): gestiona memoria del proceso
+Kernel (buddy/slab): gestiona memoria física
+Existen ambos niveles para separar responsabilidades y mejorar eficiencia.
+
 ### 7.1 Actividad: Localidad y TLB — Análisis
 
 1. ¿Cuántas veces mas lento es el acceso aleatorio frente al secuencial? Muestre el promedio de 3 ejecuciones de tlb locality.
