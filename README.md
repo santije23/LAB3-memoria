@@ -371,7 +371,7 @@ Este seria el resultado de ejecutar tlb_locality con el acceso secuencial y alea
 
 ## (e) Un enlace a un video de 10 minutos donde se sustente el desarrollo.
 
-[Haz clic aquí para ver el video](https://youtu.be/2TfkZAfZLQE)
+[Haz clic aquí para ver el video](https://youtu.be/TeelQA6-_2Y)
 
 
 ## (f) Manifiesto de transparencia: En que puntos se apoyaron de la IA generativa.
