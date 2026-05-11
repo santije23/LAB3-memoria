@@ -133,7 +133,7 @@ error ni fuga.
 en el Proceso A? ¿Que haria el SO real ante esta excepcion?
 
     ![base_bounds](capturas/base_bounds1.PNG)
-    al acceder a ``VA=64`` no es válida porque ``64 >= 64`` el programa detecta la violación y muestra ``[EXCEPCION] VA=64 viola bounds=64``, de manera similar al acceder a ``VA=100`` no es válida porque ``100 >= 64`` el programa detecta la violación y muestra ``[EXCEPCION] VA=100 viola bounds=64``
+    al acceder a ``VA=64`` no es válida porque ``64 > 64`` no se cumple el programa detecta la violación y muestra ``[EXCEPCION] VA=64 viola bounds=64``, de manera similar al acceder a ``VA=100`` no es válida porque ``100 > 64`` no se cumple el programa detecta la violación y muestra ``[EXCEPCION] VA=100 viola bounds=64``
 
     En un sistema operativo moderno, este chequeo no lo hace una función de C, sino la MMU del procesador. Cuando el hardware detecta que un proceso intenta acceder a una dirección fuera de su bounds, en este caso se genera una interrupción de hardware lo que hace que pase de modo usuario a modo kernel, regresándole el control al sistema operativo para que este último gestione esta interrupción.
 
@@ -371,7 +371,7 @@ Este seria el resultado de ejecutar tlb_locality con el acceso secuencial y alea
 
 ## (e) Un enlace a un video de 10 minutos donde se sustente el desarrollo.
 
-[Haz clic aquí para ver el video](https://youtu.be/kZarcqfpLcY)
+[Haz clic aquí para ver el video](https://youtu.be/2TfkZAfZLQE)
 
 
 ## (f) Manifiesto de transparencia: En que puntos se apoyaron de la IA generativa.
